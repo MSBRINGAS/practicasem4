@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tickets</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center">
+    <nav class="w-full bg-blue-600 p-4 text-white flex justify-between items-center">
+        <h1 class="text-xl font-bold">Lista de Tickets</h1>
+        <a href="dashboard.html" class="bg-gray-500 px-4 py-2 rounded">Volver</a>
+    </nav>
+    <div class="container mx-auto p-6">
+        <h2 class="text-2xl font-bold text-center mb-4">Tickets</h2>
+        <div id="ticketList" class="bg-white p-6 rounded-lg shadow-lg w-full max-w-3xl">
+            <p class="text-gray-600 text-center">Cargando tickets...</p>
+        </div>
+    </div>
+    <script>
+        firebase.auth().onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                loadTickets();
+            }
+        });
+
+        function loadTickets() {
+            db.collection("tickets").orderBy("createdAt", "desc").get().then((querySnapshot) => {
+                let ticketList = document.getElementById("ticketList");
+                ticketList.innerHTML = "";
+                if (querySnapshot.empty) {
+                    ticketList.innerHTML = "<p class='text-gray-600 text-center'>No hay tickets registrados.</p>";
+                    return;
+                }
+                querySnapshot.forEach((doc) => {
+                    let ticket = doc.data();
+                    let ticketElement = document.createElement("div");
+                    ticketElement.classList.add("p-4", "border", "mb-4", "rounded", "shadow");
+                    ticketElement.innerHTML = `
+                        <h3 class="text-lg font-bold">${ticket.title}</h3>
+                        <p class="text-gray-600">${ticket.description}</p>
+                        <p class="mt-2 text-sm"><strong>Prioridad:</strong> ${ticket.priority} | <strong>Estado:</strong> ${ticket.status}</p>
+                        <button onclick="viewTicket('${doc.id}')" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded">Ver Detalles</button>
+                    `;
+                    ticketList.appendChild(ticketElement);
+                });
+            }).catch(error => {
+                alert("Error cargando tickets: " + error.message);
+            });
+        }
+
+        function viewTicket(ticketId) {
+            window.location.href = `ticket-detalle.html?id=${ticketId}`;
+        }
+    </script>
+</body>
+</html>

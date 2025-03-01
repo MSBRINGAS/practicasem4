@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center">
+    <nav class="w-full bg-blue-600 p-4 text-white flex justify-between items-center">
+        <h1 class="text-xl font-bold">Dashboard</h1>
+        <button onclick="logout()" class="bg-red-500 px-4 py-2 rounded">Cerrar sesión</button>
+    </nav>
+    <div class="container mx-auto p-6">
+        <h2 class="text-2xl font-bold text-center mb-4">Resumen de Tickets</h2>
+        <canvas id="ticketChart" class="w-full max-w-lg mx-auto"></canvas>
+    </div>
+    <script>
+        firebase.auth().onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                loadDashboard();
+            }
+        });
+
+        function loadDashboard() {
+            db.collection("tickets").get().then((querySnapshot) => {
+                let open = 0, inProgress = 0, closed = 0;
+                querySnapshot.forEach((doc) => {
+                    let status = doc.data().status;
+                    if (status === "Abierto") open++;
+                    else if (status === "En Proceso") inProgress++;
+                    else if (status === "Cerrado") closed++;
+                });
+                renderChart(open, inProgress, closed);
+            });
+        }
+
+        function renderChart(open, inProgress, closed) {
+            new Chart(document.getElementById("ticketChart"), {
+                type: 'doughnut',
+                data: {
+                    labels: ["Abiertos", "En Proceso", "Cerrados"],
+                    datasets: [{
+                        data: [open, inProgress, closed],
+                        backgroundColor: ["#ff3d67", "#ff9f40", "#4bc0c0"]
+                    }]
+                }
+            });
+        }
+
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                window.location.href = "index.html";
+            });
+        }
+    </script>
+</body>
+</html>
